@@ -1,0 +1,60 @@
+// Jenkinsfile
+pipeline {
+    agent any
+    
+    // Define environment variables for consistency
+    environment {
+        // Replace with your preferred image name
+        IMAGE_NAME = "my-task2-app"
+        CONTAINER_NAME = "task2-app-container"
+    }
+
+    stages {
+        // 1. Checkout Code (Retrieves code from Git)
+        stage('Checkout') {
+            steps {
+                // Assuming you configured the Git SCM in Jenkins job settings
+                // The 'checkout scm' step is implicitly executed if using Pipeline from SCM
+                echo "Cloning repository..."
+            }
+        }
+
+        // 2. Build Docker Image
+        stage('Build') {
+            steps {
+                echo "Building Docker image: ${IMAGE_NAME}"
+                // 'sh' executes a shell command on the Jenkins agent (your EC2 instance)
+                sh "docker build -t ${IMAGE_NAME}:${env.BUILD_NUMBER} ."
+            }
+        }
+
+        // 3. Test (Placeholder)
+        stage('Test') {
+            steps {
+                echo "Running unit tests inside a container..."
+                // In a real scenario, you'd run tests here
+                sh "echo 'Tests completed successfully.'"
+            }
+        }
+
+        // 4. Deploy Application
+        stage('Deploy') {
+            steps {
+                echo "Deploying application..."
+
+                // Stop and remove existing container if it's running
+                sh "docker stop ${CONTAINER_NAME} || true"
+                sh "docker rm ${CONTAINER_NAME} || true"
+
+                // Run the new container, mapping internal container port (e.g., 8080) to external host port (e.g., 80)
+                sh "docker run -d --name ${CONTAINER_NAME} -p 80:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline finished with status: ${currentBuild.result}"
+        }
+    }
+}
